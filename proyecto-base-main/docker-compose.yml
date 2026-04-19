@@ -37,6 +37,13 @@ services:
     ports:
       - "8080:8080"
     restart: on-failure
+    environment:
+      PORT_API: 8080
+      DB_HOST: mysql
+      DB_USER: root
+      DB_PASSWORD: password
+      DB_NAME: BD11_TRAMITACION
+      DB_PORT: 3306
     depends_on:
       mysql:
         condition: service_healthy
@@ -48,6 +55,13 @@ services:
     ports:
       - "8081:8081"
     restart: on-failure
+    environment:
+      PORT_API: 8081
+      DB_HOST: mysql
+      DB_USER: root
+      DB_PASSWORD: password
+      DB_NAME: BD11_VALIDACIONES
+      DB_PORT: 3306
     depends_on:
       mysql:
         condition: service_healthy
