@@ -1,0 +1,30 @@
+.seguros {
+  margin-top: 6px;
+}
+
+.seccion-no-pago {
+  margin-top: 18px;
+}
+
+/* --- Botones --- */
+.botones {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 28px;
+  gap: 12px;
+}
+
+.boton-home {
+  text-align: center;
+  margin-top: 14px;
+}
+
+.btn-home {
+  background-color: var(--gray-500);
+  color: white;
+}
+
+.btn-home:hover {
+  background-color: #334155;
+}

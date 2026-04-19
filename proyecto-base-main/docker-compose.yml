@@ -1,0 +1,56 @@
+version: "3.4"
+
+services:
+
+  # --- Base de datos ---
+  mysql:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+    volumes:
+      - ./db-init:/docker-entrypoint-initdb.d   # crea las BDs y tablas al primer arranque
+      - mysql_data:/var/lib/mysql               # persiste los datos entre reinicios
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ppassword"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # --- Aplicación principal ---
+  proyecto-base-main:
+    build: ./
+    image: proyecto-base-main
+    ports:
+      - "5000:5000"
+    restart: on-failure
+    depends_on:
+      - api_tramitacion
+      - api_validaciones
+
+  # --- API de tramitación ---
+  api_tramitacion:
+    build: ./API_TRAMITACION
+    image: api_tramitacion
+    ports:
+      - "8080:8080"
+    restart: on-failure
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  # --- API de validaciones ---
+  api_validaciones:
+    build: ./API_VALIDACIONES
+    image: api_validaciones
+    ports:
+      - "8081:8081"
+    restart: on-failure
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+volumes:
+  mysql_data:

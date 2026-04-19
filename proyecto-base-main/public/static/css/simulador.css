@@ -1,0 +1,15 @@
+.header-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.btn-credit {
+  background-color: var(--blue-700);
+  color: white;
+}
+
+.btn-credit:hover {
+  background-color: var(--blue-900);
+}

@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Solicitar Crédito — Banco CG</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../static/css/base.css">
+  <link rel="stylesheet" href="../static/css/credito_form.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <a href="/" class="brand">Banco CG</a>
+  </header>
+
+  <div class="page-container" style="max-width:640px;">
+    <div class="card">
+      <h1>Solicitar Crédito</h1>
+
+      <form method="POST" action="/credito_directo">
+
+        <label for="rut">RUT</label>
+        <input
+          type="text"
+          name="rut"
+          id="rut"
+          value="<%= rut || '' %>"
+          placeholder="Ej: 12.345.678-9"
+          required
+          pattern="^(\d{1,2}\.?\d{3}\.?\d{3}-[\dkK])$"
+          title="Formato válido: 12.345.678-9 o 12345678-9">
+
+        <label for="monto_display">Monto del Préstamo (CLP)</label>
+        <input
+          type="text"
+          id="monto_display"
+          value="<%= monto_formateado || '' %>"
+          placeholder="$5.000.000"
+          required>
+        <input type="hidden" id="monto_hidden" name="monto" value="<%= monto || '' %>">
+
+        <label for="cuotas">Plazo (en meses)</label>
+        <input
+          type="number"
+          name="cuotas"
+          id="cuotas"
+          placeholder="Ej: 24"
+          value="<%= cuotas || '' %>"
+          min="1"
+          max="360"
+          required>
+
+        <label for="fecha_primer_pago">Fecha del Primer Pago</label>
+        <input type="date" id="fecha_primer_pago" name="fecha_primer_pago" required>
+
+        <div class="seccion-no-pago">
+          <label>
+            <input type="checkbox" id="activar_no_pago" name="activar_no_pago">
+            Activar opción de mes sin pago
+          </label>
+        </div>
+
+        <div id="opciones_no_pago" style="display:none;">
+          <label for="mes_sin_pago">¿Qué mes no pagarás?</label>
+          <select name="mes_sin_pago" id="mes_sin_pago">
+            <option value="">Seleccionar mes</option>
+            <option>Enero</option>
+            <option>Febrero</option>
+            <option>Marzo</option>
+            <option>Abril</option>
+            <option>Mayo</option>
+            <option>Junio</option>
+            <option>Julio</option>
+            <option>Agosto</option>
+            <option>Septiembre</option>
+            <option>Octubre</option>
+            <option>Noviembre</option>
+            <option>Diciembre</option>
+          </select>
+        </div>
+
+        <label>Seguros Asociados</label>
+        <div class="seguros">
+          <label><input type="checkbox" id="seg-degravamen" name="seguros" value="degravamen"> Degravamen</label>
+          <label><input type="checkbox" id="seg-cesantia"   name="seguros" value="cesantia">   Cesantía</label>
+        </div>
+
+        <!-- Vista previa del crédito -->
+        <div id="preview" style="display:none; margin-top:24px; background:var(--blue-50); border:1.5px solid var(--blue-700); border-radius:8px; padding:20px;">
+          <h2 style="font-size:0.95rem; margin:0 0 14px; color:var(--blue-900);">Resumen estimado del crédito</h2>
+          <table style="margin-top:0;">
+            <tr>
+              <th>Cuota base</th>
+              <td id="prev-cuota-base">—</td>
+            </tr>
+            <tr id="row-degravamen" style="display:none;">
+              <th>Seguro Degravamen</th>
+              <td id="prev-degravamen">—</td>
+            </tr>
+            <tr id="row-cesantia" style="display:none;">
+              <th>Seguro Cesantía</th>
+              <td id="prev-cesantia">—</td>
+            </tr>
+            <tr id="row-cuota-total" style="display:none;">
+              <th>Cuota Total</th>
+              <td id="prev-cuota-total" style="font-weight:700; color:var(--blue-900);">—</td>
+            </tr>
+            <tr>
+              <th>Plazo total</th>
+              <td id="prev-plazo">—</td>
+            </tr>
+            <tr>
+              <th>Total a pagar</th>
+              <td id="prev-total" style="font-weight:700; color:var(--blue-900);">—</td>
+            </tr>
+          </table>
+        </div>
+
+        <div class="botones">
+          <button type="submit" class="btn btn-primary">Contratar Crédito</button>
+          <a href="/simulator" class="btn btn-secondary">Volver al Simulador</a>
+        </div>
+
+        <div class="boton-home">
+          <a href="/" class="btn btn-home">Volver al Inicio</a>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const INTEREST_RATE  = 0.06;
+    const TASA_DEGRAVAMEN = 0.0004;
+    const TASA_CESANTIA   = 0.0003;
+
+    const montoDisplay = document.getElementById('monto_display');
+    const montoHidden  = document.getElementById('monto_hidden');
+
+    montoDisplay.addEventListener('input', function(e) {
+      let rawValue = e.target.value.replace(/[^0-9]/g, '');
+      montoHidden.value = rawValue;
+      e.target.value = rawValue ? '$' + parseInt(rawValue, 10).toLocaleString('es-CL') : '';
+      actualizarPreview();
+    });
+
+    document.getElementById('cuotas').addEventListener('input', actualizarPreview);
+    document.getElementById('activar_no_pago').addEventListener('change', function() {
+      document.getElementById('opciones_no_pago').style.display = this.checked ? 'block' : 'none';
+      if (!this.checked) document.getElementById('mes_sin_pago').value = '';
+      actualizarPreview();
+    });
+    document.getElementById('seg-degravamen').addEventListener('change', actualizarPreview);
+    document.getElementById('seg-cesantia').addEventListener('change',   actualizarPreview);
+
+    function fmt(n) {
+      return '$' + Math.round(n).toLocaleString('es-CL');
+    }
+
+    // --- Vista previa en tiempo real ---
+    function actualizarPreview() {
+      const monto  = parseInt(montoHidden.value)  || 0;
+      const cuotas = parseInt(document.getElementById('cuotas').value) || 0;
+
+      if (!monto || !cuotas) {
+        document.getElementById('preview').style.display = 'none';
+        return;
+      }
+
+      let j = 0;
+      for (let i = 1; i <= cuotas; i++) {
+        j += 1 / Math.pow(1 + INTEREST_RATE, i);
+      }
+      const cuotaBase = j > 0 ? Math.round(monto / j) : 0;
+
+      const conDegravamen = document.getElementById('seg-degravamen').checked;
+      const conCesantia   = document.getElementById('seg-cesantia').checked;
+      const costoDeg = conDegravamen ? Math.round(monto * TASA_DEGRAVAMEN) : 0;
+      const costoces = conCesantia   ? Math.round(monto * TASA_CESANTIA)   : 0;
+      const costoSeguros = costoDeg + costoces;
+      const cuotaTotal   = cuotaBase + costoSeguros;
+
+      const noPago       = document.getElementById('activar_no_pago').checked;
+      const cuotasTotales = noPago ? cuotas + 1 : cuotas;
+      const total        = cuotaTotal * cuotasTotales;
+
+      document.getElementById('prev-cuota-base').textContent = fmt(cuotaBase) + ' / mes';
+
+      const rowDeg = document.getElementById('row-degravamen');
+      rowDeg.style.display = conDegravamen ? '' : 'none';
+      if (conDegravamen) document.getElementById('prev-degravamen').textContent = fmt(costoDeg) + ' / mes';
+
+      const rowCes = document.getElementById('row-cesantia');
+      rowCes.style.display = conCesantia ? '' : 'none';
+      if (conCesantia) document.getElementById('prev-cesantia').textContent = fmt(costoces) + ' / mes';
+
+      const rowTotal = document.getElementById('row-cuota-total');
+      rowTotal.style.display = costoSeguros > 0 ? '' : 'none';
+      if (costoSeguros > 0) document.getElementById('prev-cuota-total').textContent = fmt(cuotaTotal) + ' / mes';
+
+      document.getElementById('prev-plazo').textContent =
+        cuotas + ' meses' + (noPago ? ' + 1 mes diferido' : '');
+      document.getElementById('prev-total').textContent = fmt(total);
+
+      document.getElementById('preview').style.display = 'block';
+    }
+
+    // --- Validación al enviar ---
+    document.querySelector('form').addEventListener('submit', function(e) {
+      const monto  = parseInt(montoHidden.value);
+      const cuotas = parseInt(document.getElementById('cuotas').value);
+      const fecha  = document.getElementById('fecha_primer_pago').value;
+
+      if (!monto || monto <= 0) {
+        e.preventDefault();
+        alert('Ingrese un monto válido mayor a $0.');
+        return;
+      }
+      if (!cuotas || cuotas < 1) {
+        e.preventDefault();
+        alert('El plazo debe ser al menos 1 mes.');
+        return;
+      }
+      if (fecha && new Date(fecha) <= new Date()) {
+        e.preventDefault();
+        alert('La fecha del primer pago debe ser una fecha futura.');
+      }
+    });
+
+    // Inicializar preview si hay valores precargados desde el simulador
+    actualizarPreview();
+  </script>
+
+</body>
+</html>

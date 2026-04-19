@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Detalle del Crédito — Banco CG</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../static/css/base.css">
+  <link rel="stylesheet" href="../static/css/credito.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <a href="/" class="brand">Banco CG</a>
+  </header>
+
+  <div class="page-container" style="max-width:640px;">
+    <div class="card">
+      <div style="background:var(--green-50); color:var(--green-700); padding:10px 16px; border-radius:6px; margin-bottom:20px; font-size:0.875rem; font-weight:600;">
+        Orden generada correctamente
+      </div>
+
+      <h1>Detalle del Crédito</h1>
+
+      <table>
+        <tr>
+          <th>Monto Solicitado</th>
+          <td>$<%= simulacion.monto.toLocaleString('es-CL') %></td>
+        </tr>
+        <tr>
+          <th>Plazo</th>
+          <td>
+            <%= simulacion.cuotas %> meses
+            <% if (simulacion.tiene_no_pago) { %>
+              <span style="color:var(--gray-500); font-size:0.8rem;"> + 1 mes diferido (<%= simulacion.mes_no_pago %>)</span>
+            <% } %>
+          </td>
+        </tr>
+        <tr>
+          <th>Cuota Base</th>
+          <td>$<%= simulacion.valor_cuota.toLocaleString('es-CL') %></td>
+        </tr>
+        <% if (simulacion.costo_seguros > 0) { %>
+          <% if (simulacion.seguros.includes('degravamen')) { %>
+          <tr>
+            <th>Seguro Degravamen</th>
+            <td>$<%= Math.round(simulacion.monto * 0.0004).toLocaleString('es-CL') %> / mes</td>
+          </tr>
+          <% } %>
+          <% if (simulacion.seguros.includes('cesantia')) { %>
+          <tr>
+            <th>Seguro Cesantía</th>
+            <td>$<%= Math.round(simulacion.monto * 0.0003).toLocaleString('es-CL') %> / mes</td>
+          </tr>
+          <% } %>
+          <tr>
+            <th>Cuota Total</th>
+            <td><strong>$<%= simulacion.cuota_total.toLocaleString('es-CL') %></strong></td>
+          </tr>
+        <% } %>
+        <tr>
+          <th>Total a Pagar</th>
+          <td>$<%= simulacion.total.toLocaleString('es-CL') %></td>
+        </tr>
+        <tr>
+          <th>Estado</th>
+          <td>Pendiente de firma</td>
+        </tr>
+      </table>
+
+      <p class="resumen">
+        En total pagarás <span class="valor">$<%= simulacion.total.toLocaleString('es-CL') %></span> CLP
+      </p>
+
+      <div class="botones">
+        <a id="abrirFirmaBtn" class="btn btn-success" style="cursor:pointer;">Ir a firmar</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="firmaOverlay" style="position:fixed; inset:0; background:rgba(15,23,42,0.6); backdrop-filter:blur(4px); display:none; justify-content:center; align-items:center; z-index:9999;">
+    <div style="background:white; padding:32px; width:420px; border-radius:12px; text-align:center; box-shadow:0 20px 48px rgba(0,0,0,0.3);">
+      <h2 style="margin:0 0 6px; color:var(--blue-900);">Firmar Crédito</h2>
+      <p style="color:var(--gray-500); font-size:0.875rem; margin:0 0 20px;">Dibuja tu firma en el recuadro</p>
+
+      <canvas id="canvasFirma" width="350" height="180" style="border:1.5px solid var(--gray-200); border-radius:6px; cursor:crosshair; touch-action:none;"></canvas>
+
+      <div style="margin-top:20px;">
+        <button id="btnConfirmarFirma" class="btn btn-success" style="width:100%;">Confirmar Firma</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Overlay de firma ---
+    const overlay = document.getElementById("firmaOverlay");
+    document.getElementById("abrirFirmaBtn").addEventListener("click", () => {
+      overlay.style.display = "flex";
+    });
+
+    // --- Canvas de dibujo ---
+    const canvas = document.getElementById("canvasFirma");
+    const ctx = canvas.getContext("2d");
+
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = "#0f172a";
+
+    let dibujando = false;
+
+    function posCanvas(e) {
+      const rect = canvas.getBoundingClientRect();
+      const src = e.touches ? e.touches[0] : e;
+      return { x: src.clientX - rect.left, y: src.clientY - rect.top };
+    }
+
+    function iniciarTrazo(e) {
+      dibujando = true;
+      const p = posCanvas(e);
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+    }
+
+    function dibujar(e) {
+      if (!dibujando) return;
+      e.preventDefault();
+      const p = posCanvas(e);
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+    }
+
+    function terminarTrazo() { dibujando = false; }
+
+    canvas.addEventListener("mousedown",  iniciarTrazo);
+    canvas.addEventListener("mousemove",  dibujar);
+    canvas.addEventListener("mouseup",    terminarTrazo);
+    canvas.addEventListener("mouseleave", terminarTrazo);
+    canvas.addEventListener("touchstart", iniciarTrazo, { passive: false });
+    canvas.addEventListener("touchmove",  dibujar,      { passive: false });
+    canvas.addEventListener("touchend",   terminarTrazo);
+
+    document.getElementById("btnConfirmarFirma").addEventListener("click", () => {
+      window.location.href = "/final";
+    });
+  </script>
+
+</body>
+</html>

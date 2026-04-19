@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Validación de Documentos — Banco CG</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../static/css/base.css">
+  <link rel="stylesheet" href="../static/css/documentos.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <a href="/" class="brand">Banco CG</a>
+  </header>
+
+  <div class="page-container" style="max-width:640px;">
+    <div class="card">
+      <h1>Validación de Documentos</h1>
+      <p style="color:var(--gray-500); font-size:0.875rem; margin-top:-16px; margin-bottom:24px;">
+        Bienvenido <strong style="color:var(--gray-900);"><%= nombre %></strong>. Adjunte los archivos requeridos para el RUT: <strong style="color:var(--gray-900); white-space:nowrap;"><%= rut %></strong>.
+      </p>
+
+      <div class="file-card" id="card-cedula">
+        <label>Cédula de Identidad (PDF)</label>
+        <input type="file" id="cedula" accept=".pdf" onchange="validarInput(this, 'msg-cedula', 'card-cedula')">
+        <div id="msg-cedula" class="status-msg success" style="display:none;">Documento verificado</div>
+      </div>
+
+      <div class="file-card" id="card-afp">
+        <label>Certificado de AFP (PDF)</label>
+        <input type="file" id="afp" accept=".pdf" onchange="validarInput(this, 'msg-afp', 'card-afp')">
+        <div id="msg-afp" class="status-msg success" style="display:none;">Documento verificado</div>
+      </div>
+
+      <div class="file-card" id="card-contrato">
+        <label>Contrato de Trabajo (PDF)</label>
+        <input type="file" id="contrato" accept=".pdf" onchange="validarInput(this, 'msg-contrato', 'card-contrato')">
+        <div id="msg-contrato" class="status-msg success" style="display:none;">Documento verificado</div>
+      </div>
+
+      <div class="botones">
+        <button id="btnFinalizar" class="btn btn-primary">Finalizar y Ver Detalle</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function validarInput(input, msgId, cardId) {
+      const file = input.files[0];
+      const msg = document.getElementById(msgId);
+      const card = document.getElementById(cardId);
+
+      if (file && file.type === "application/pdf") {
+        msg.style.display = "block";
+        card.style.borderLeft = "4px solid var(--green-700)";
+        card.style.backgroundColor = "var(--green-50)";
+      } else {
+        alert("El archivo debe ser exclusivamente formato PDF.");
+        input.value = "";
+        msg.style.display = "none";
+        card.style.borderLeft = "1.5px solid var(--gray-200)";
+        card.style.backgroundColor = "#fff";
+      }
+    }
+
+    document.getElementById('btnFinalizar').addEventListener('click', () => {
+      const inputs = document.querySelectorAll('input[type="file"]');
+      let completado = true;
+      inputs.forEach(i => { if (i.files.length === 0) completado = false; });
+
+      if (completado) {
+        window.location.href = '/credito';
+      } else {
+        alert("Por favor, cargue todos los documentos antes de continuar.");
+      }
+    });
+  </script>
+
+</body>
+</html>

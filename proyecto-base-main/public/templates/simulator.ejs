@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Simulador de Préstamos — Banco CG</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../static/css/base.css">
+  <link rel="stylesheet" href="../static/css/simulador.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <a href="/" class="brand">Banco CG</a>
+  </header>
+
+  <div class="page-container">
+
+    <div class="card">
+      <h1>Simulador de Préstamos</h1>
+      <p style="color:var(--gray-500); margin-top:-12px; margin-bottom:20px; font-size:0.875rem;">
+        Tasa de interés mensual: <strong><%= interest_rate %>%</strong>
+      </p>
+      <form method="post" action="/simulator">
+        <label>Monto del Préstamo (CLP)</label>
+        <input type="text" id="monto_display" placeholder="$500.000" required>
+        <input type="hidden" id="monto_hidden" name="monto">
+
+        <label>Plazo (meses)</label>
+        <input type="number" name="cuotas" id="cuotas" placeholder="12" min="1" max="360" required>
+
+        <div style="margin-top:24px;">
+          <button type="submit" class="btn btn-primary">Calcular y Añadir</button>
+        </div>
+      </form>
+    </div>
+
+    <% if (simulations && simulations.length > 0) { %>
+      <div class="card">
+        <div class="header-flex">
+          <h2>Historial de Simulaciones</h2>
+          <a href="/clear" class="btn btn-danger">Limpiar</a>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Monto Solicitado</th>
+              <th>Pago Mensual</th>
+              <th>Plazo</th>
+              <th>Costo Total</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% simulations.forEach((sim, index) => { %>
+              <tr>
+                <td>$<%= sim.monto.toLocaleString('es-CL') %></td>
+                <td>$<%= sim.valor_cuota.toLocaleString('es-CL') %></td>
+                <td><%= sim.cuotas %> meses</td>
+                <td>$<%= sim.total.toLocaleString('es-CL') %></td>
+                <td>
+                  <form method="post" action="/delete/<%= index %>" style="display:inline;">
+                    <button type="submit" class="btn btn-danger" style="padding:6px 12px;">Eliminar</button>
+                  </form>
+                  <form action="javascript:void(0);" style="display:inline;">
+                    <button type="button" class="btn btn-credit" onclick="abrirPopupNombre(<%= index %>, <%= sim.monto %>, <%= sim.cuotas %>)" style="padding:6px 12px;">Contratar</button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+
+    <a href="/" class="volver-link">← Volver a la Página Principal</a>
+
+  </div>
+
+  <div id="popup-nombre" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.6); backdrop-filter:blur(4px); justify-content:center; align-items:center; z-index:9999;">
+    <div style="background:white; padding:32px; width:380px; border-radius:12px; box-shadow:0 20px 48px rgba(0,0,0,0.3);">
+      <h2 style="margin:0 0 20px; color:var(--blue-900);">Verificar identidad</h2>
+      <label style="text-transform:uppercase; font-size:0.72rem; color:var(--gray-500); letter-spacing:0.5px;">Nombre Completo</label>
+      <input type="text" id="nombre_completo" placeholder="Nombre y Apellido" required style="margin-top:6px;">
+      <div style="display:flex; gap:10px; margin-top:20px;">
+        <button onclick="guardarNombre()" class="btn btn-primary" style="flex:1;">Confirmar</button>
+        <button onclick="cerrarPopupNombre()" class="btn btn-secondary" style="flex:1;">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Formateo y validación del monto ---
+    const montoDisplay = document.getElementById('monto_display');
+    const montoHidden = document.getElementById('monto_hidden');
+
+    montoDisplay.addEventListener('input', function(e) {
+      let rawValue = e.target.value.replace(/[^0-9]/g, '');
+      montoHidden.value = rawValue;
+      e.target.value = rawValue ? '$' + parseInt(rawValue, 10).toLocaleString('es-CL') : '';
+    });
+
+    document.querySelector('form[action="/simulator"]').addEventListener('submit', function(e) {
+      const monto = parseInt(montoHidden.value);
+      const cuotas = parseInt(document.getElementById('cuotas').value);
+      if (!monto || monto <= 0) {
+        e.preventDefault();
+        alert('Ingrese un monto válido mayor a $0.');
+        return;
+      }
+      if (!cuotas || cuotas < 1) {
+        e.preventDefault();
+        alert('El plazo debe ser al menos 1 mes.');
+      }
+    });
+
+    // --- Popup de nombre ---
+    const popupNombre = document.getElementById('popup-nombre');
+    const nombreCompletoInput = document.getElementById('nombre_completo');
+    const rutSesion = "<%= rut %>";
+
+    let selectedIndex = null;
+    let selectedMonto = null;
+    let selectedCuotas = null;
+
+    function abrirPopupNombre(index, monto, cuotas) {
+      selectedIndex = index;
+      selectedMonto = monto;
+      selectedCuotas = cuotas;
+      popupNombre.style.display = 'flex';
+      nombreCompletoInput.focus();
+    }
+
+    function cerrarPopupNombre() {
+      popupNombre.style.display = 'none';
+      nombreCompletoInput.value = '';
+    }
+
+    function guardarNombre() {
+      const nombreCompleto = nombreCompletoInput.value.trim();
+      const rut = rutSesion;
+
+      if (!nombreCompleto) {
+        return alert('Por favor, ingrese su nombre completo');
+      }
+
+      fetch('http://localhost:8080/leerTabla')
+        .then(response => {
+          console.log("Status:", response.status);
+          console.log("Headers:", [...response.headers.entries()]);
+          return response.json();
+        })
+        .then(data => {
+          console.log("Datos recibidos de la API:", data);
+
+          const found = data.find(row =>
+            row.rut === rut &&
+            row.nombre.toLowerCase() === nombreCompleto.toLowerCase()
+          );
+
+          console.log("Resultado de find:", found);
+
+          if (found) {
+            fetch('/guardar_nombre', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ nombre: found.nombre })
+            }).then(() => {
+              window.location.href = `/credito_form?monto=${selectedMonto}&cuotas=${selectedCuotas}`;
+            });
+          } else {
+            alert("EL RUT y nombre completo no coinciden.");
+          }
+        })
+        .catch(error => {
+          console.error("ERROR EN FETCH / EN THEN:", error);
+          alert("Hubo un problema al verificar el RUT y nombre.");
+        });
+    }
+  </script>
+
+</body>
+</html>

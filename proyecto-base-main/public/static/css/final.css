@@ -1,0 +1,113 @@
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.final-container {
+  background: white;
+  padding: 48px 40px;
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  text-align: center;
+  max-width: 480px;
+  width: 90%;
+  animation: slideUp 0.5s ease-out;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.success-checkmark {
+  width: 68px;
+  height: 68px;
+  margin: 0 auto 24px;
+  background: var(--green-50);
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.check-icon {
+  width: 16px;
+  height: 30px;
+  border: solid var(--green-700);
+  border-width: 0 4px 4px 0;
+  transform: rotate(45deg);
+  margin-bottom: 4px;
+}
+
+.final-container h1 {
+  font-size: 1.5rem;
+  margin-bottom: 12px;
+}
+
+.final-container > p {
+  color: var(--gray-500);
+  line-height: 1.6;
+  font-size: 0.95rem;
+  margin-bottom: 0;
+}
+
+.contenido {
+  border-top: 1px solid var(--gray-200);
+  padding-top: 28px;
+  margin-top: 28px;
+}
+
+.contenido > p {
+  color: var(--gray-500);
+  font-size: 0.9rem;
+  margin-bottom: 16px;
+}
+
+/* --- Descargas --- */
+.descargas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.btn-descarga {
+  background-color: var(--gray-50);
+  color: var(--gray-900);
+  border: 1.5px solid var(--gray-200);
+  padding: 14px 10px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.875rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 52px;
+  transition: all 0.2s;
+}
+
+.btn-descarga:hover {
+  border-color: var(--blue-700);
+  color: var(--blue-700);
+  background-color: var(--blue-50);
+}
+
+.volver {
+  display: inline-block;
+  color: var(--blue-700);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.volver:hover {
+  color: var(--blue-900);
+  text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .descargas { grid-template-columns: 1fr; }
+}
